@@ -1,0 +1,141 @@
+# Simple-game
+This is simple game written on Python
+#Создай собственный Шутер!
+from random import randint
+from pygame import *
+from pygame import time as timer
+
+mixer.init()
+mixer.music.load('pon_fon.mp3')
+mixer.music.play() 
+pew = mixer.Sound('pew-pew-lame-sound-effect.ogg')
+yep = mixer.Sound('yeee.ogg')
+losee = mixer.Sound('mario-falling.ogg')
+font.init()
+win_width = 700
+win_height = 500
+window = display.set_mode((win_width,win_height))
+display.set_caption('шутир ат первава лица')
+run = True
+finish = False
+FPS = 60
+speed = 4
+speed2 = 3
+clock = time.Clock()
+lost = 0
+kill = 0
+hp = 5
+bullets = sprite.Group()
+class GameSprite(sprite.Sprite):
+    def __init__(self,player_image,player_x,player_y,player_width,player_height,player_speed):
+        super().__init__()
+        self.image = transform.scale(image.load(player_image),(player_width,player_height))
+        self.speed = player_speed
+        self.rect = self.image.get_rect()
+        self.rect.x = player_x
+        self.rect.y = player_y
+    def reset(self):
+        window.blit(self.image,(self.rect.x,self.rect.y))
+class Bullet(GameSprite):
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.y < 0:
+            self.kill()
+
+class Player(GameSprite):
+    def update(self):
+        key_pressed = key.get_pressed()
+        if key_pressed[K_a] and  self.rect.x  > 5:
+            self.rect.x -= self.speed   
+        if key_pressed[K_d] and self.rect.x < 600:
+            self.rect.x += self.speed
+        if key_pressed[K_LEFT] and  self.rect.x  > 5:
+            self.rect.x -= self.speed   
+        if key_pressed[K_RIGHT] and self.rect.x < 600:
+            self.rect.x += self.speed
+    def fire(self):
+        bullet = Bullet('bullet.png',self.rect.centerx,self.rect.top,15,20,-5)
+        bullets.add(bullet)
+class Enemy(GameSprite):
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.y > win_height:
+            global lost
+            self.rect.x = randint(80, win_width - 80)
+            self.rect.y = 0
+            lost = lost + 1
+
+bullet = Bullet('bullet.png',500,250,100,80,-3)
+bg = transform.scale(image.load("rozen.png"),(700,500))
+player = Player("bebraa.png",500,350 ,80,80,speed)
+enemies = sprite.Group()
+kamni = sprite.Group()
+
+font1 = font.SysFont('Arial',36)
+font2 = font.SysFont('Arial',70)
+text_lose = font1.render('Пропущенo:' + str(lost),1, (255,255,255))     
+text_kill = font1.render('Убито:' + str(kill),1,(255,255,255))
+text_win  = font1.render('YoU WiN!',1,(245, 236, 66))
+text_lost = font1.render('you lose :(',1,(235, 5, 5))
+text_hp = font2.render(str(hp),1,(124,252,0))
+
+for i in range(1,5):
+    enemy = Enemy('roblox_men.png',randint(80,win_width - 80),-40, 80,50,randint(1,3))
+    enemies.add(enemy)
+    kamen = Enemy('redan.png',randint(80,win_width - 80),-40, 80,50,randint(1,3))
+    kamni.add(kamen)
+while run:
+    for e in event.get():
+        if e.type == QUIT:
+            run = False 
+        elif e.type == KEYDOWN:
+            if e.key == K_SPACE:
+                player.fire()
+                pew.play()
+        
+
+    if not finish:
+        window.blit(bg,(0,0))
+        player.reset()
+        player.update()
+        bullets.draw(window)
+        enemies.draw(window)
+        enemies.update()
+        kamni.draw(window)
+        kamni.update()
+        text_lose = font1.render('Пропущенo:' + str(lost),1, (255,255,255))
+        text_kill = font1.render('Убито:' + str(kill),1,(255,255,255))
+        text_win  = font1.render('YoU WiN!',1,(245, 236, 66))
+        text_lost  = font1.render('you lose :(',1,(235, 5, 5))
+        text_hp = font1.render(str(hp),5,(124,252,0))
+        window.blit(text_lose,(10,50))
+        window.blit(text_kill,(10,30))
+        window.blit(text_hp,(650,30))
+        bullets.update()    
+        collides = sprite.groupcollide(enemies, bullets, True, True)
+        for c in collides:
+            kill += 1
+            enemy = Enemy('roblox_men.png',randint(80,win_width - 80),-40, 80,50,randint(1,3))
+            enemies.add(enemy)
+        if kill >= 41:
+            finish = True
+            window.blit(text_win,(200,200))
+            yep.play()
+            mixer.music.stop()
+        if lost >= 9 or sprite.spritecollide(player,enemies,False):
+            window.blit(text_lost,(200,200))
+            losee.play()
+            mixer.music.stop()
+            finish = True
+        if sprite.spritecollide(player, kamni, False):
+            hp -= 1
+            text_hp = font2.render(str(hp-1),1,(124,252,0))
+        if hp <= -1 :
+            finish = True
+            window.blit(text_lost,(200,200))
+            losee.play()
+            mixer.music.stop()
+
+
+    display.update()
+    clock.tick(FPS)
